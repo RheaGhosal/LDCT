@@ -1,4 +1,3 @@
-
 import os
 import torch
 from torch.utils.data import Dataset
@@ -7,7 +6,7 @@ import numpy as np
 import random
 
 class LDCTStrokeDataset(Dataset):
-    def __init__(self, split='train', dose_level=5, transform=None, data_dir='data/processed'):
+    def __init__(self, split='train', dose_level=5, transform=None, data_dir='/storage/LDCT/dataset'):
         self.split = split
         self.dose_level = dose_level
         self.transform = transform
@@ -16,11 +15,23 @@ class LDCTStrokeDataset(Dataset):
 
     def _load_samples(self):
         samples = []
-        for label in ['stroke', 'no_stroke']:
-            label_dir = os.path.join(self.data_dir, label)
-            for fname in os.listdir(label_dir):
-                if fname.endswith('.png'):
-                    samples.append((os.path.join(label_dir, fname), 1 if label == 'stroke' else 0))
+        for root, _, files in os.walk(self.data_dir):
+            if 'image.npz' in files and 'mask.npz' in files:
+                image_path = os.path.join(root, 'image.npz')
+                mask_path = os.path.join(root, 'mask.npz')
+
+                mask_npz = np.load(mask_path)
+                # Figure out the correct key
+                if 'mask' in mask_npz:
+                    mask = mask_npz['mask']
+                elif 'arr_0' in mask_npz:
+                    mask = mask_npz['arr_0']
+                else:
+                    continue  # skip if no usable data
+
+                label = 1 if mask.sum() > 0 else 0
+                samples.append((image_path, label))
+
         random.shuffle(samples)
         return samples
 
@@ -35,11 +46,17 @@ class LDCTStrokeDataset(Dataset):
         return len(self.samples)
 
     def __getitem__(self, idx):
-        img_path, label = self.samples[idx]
-        image = Image.open(img_path).convert('L')
+        image_path, label = self.samples[idx]
+
+        img_npz = np.load(image_path)
+        key = 'arr_0' if 'arr_0' in img_npz else list(img_npz.files)[0]
+        img_array = img_npz[key].astype(np.float32) / 255.0
+
+        image = Image.fromarray((img_array * 255).astype(np.uint8)).convert('L')
         image = self.apply_poisson_noise(image)
 
         if self.transform:
             image = self.transform(image)
 
         return image, label
+
