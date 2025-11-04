@@ -1,34 +1,45 @@
 import torch
 import torch.nn as nn
-import torchvision.models as models
+import torchvision.models as tvm
 import os
 
 class ResNetClassifier(nn.Module):
-    def __init__(self, in_channels=1, weights_path='/storage/LDCT/resnet18-f37072fd.pth'):
+    def __init__(self, in_channels=1, weights_path=None):
         super().__init__()
-        
-        # Print the path to confirm the weights file location
-        print("Weights path:", weights_path)
-        print("File exists:", os.path.exists(weights_path))
-        
-        # Load ResNet18 without pre-trained weights (pretrained=False)
-        self.model = models.resnet18(pretrained=False)  # NO pre-trained weights, to avoid downloading
-       
-        # Load custom pre-trained weights manually
-        if os.path.exists(weights_path):
-            self.model.load_state_dict(torch.load(weights_path))
-        else:
-            raise FileNotFoundError(f"Weights file not found at: {weights_path}")
-        
-        # Modify the first convolutional layer for grayscale input
-        self.model.conv1 = nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
-        
-        # Modify the final fully connected layer for binary classification
-        self.model.fc = nn.Linear(self.model.fc.in_features, 1)
+        # Build a plain resnet18 (we’ll load fine-tuned weights later in the app)
+        backbone = tvm.resnet18(weights=None)
+
+        if in_channels == 1:
+            # replace first conv to accept 1-channel
+            conv1 = backbone.conv1
+            new_conv = nn.Conv2d(
+                1, conv1.out_channels,
+                kernel_size=conv1.kernel_size,
+                stride=conv1.stride,
+                padding=conv1.padding,
+                bias=False
+            )
+            # init from RGB by averaging into the Parameter
+            with torch.no_grad():
+                avg = conv1.weight.detach().mean(dim=1, keepdim=True)  # [out,1,k,k]
+                new_conv.weight.copy_(avg)
+            backbone.conv1 = new_conv
+
+        # binary head (one logit)
+        backbone.fc = nn.Linear(backbone.fc.in_features, 1)
+        self.model = backbone
+
+        # Optional backbone init if a path was provided
+        if weights_path:
+            try:
+                if os.path.exists(weights_path):
+                    state = torch.load(weights_path, map_location='cpu')
+                    self.model.load_state_dict(state, strict=False)
+            except Exception as e:
+                print(f"[WARN] Could not load initial weights from {weights_path}: {e}")
 
     def forward(self, x):
         return self.model(x)
-
 
 class UNetBlock(nn.Module):
     def __init__(self, in_ch, out_ch):
