@@ -16,7 +16,7 @@ A low-dose (noisy) CT slice is fed directly into a pre-trained **ResNet classifi
 The same input is first **restored using a UNet denoiser**, then passed to the **ResNet classifier**.  
 This mimics the dual-stage approach proposed in the paper and allows comparison of the effect of denoising on diagnostic accuracy.
 
-## 🧠 LDCT Stroke Classification Demo
+## LDCT Stroke Classification Demo
 
 This demo visualizes two pipelines for **stroke detection from low-dose CT scans**:
 
@@ -25,7 +25,7 @@ This demo visualizes two pipelines for **stroke detection from low-dose CT scans
 
 ---
 
-### 🚀 Pipeline 1: Direct Classification
+###  Pipeline 1: Direct Classification
 
 The classifier operates on the raw low-dose CT input.
 
@@ -41,7 +41,7 @@ The classifier operates on the raw low-dose CT input.
 
 ---
 
-### 🔄 Pipeline 2: Denoise → Classify
+###  Pipeline 2: Denoise → Classify
 
 The UNet denoiser restores the structure before classification.
 
@@ -92,8 +92,8 @@ I_{\text{LD}}(x, y) = \frac{1}{\lambda} \, \text{Poisson}(\lambda \cdot I_{\text
 1. **Upload a CT slice** (`.npz` with `arr_0`, or `.png`/`.jpg` format)
 2. (Optional) Upload a **clean reference slice** to compute **PSNR** and **SSIM**
 3. Choose between:
-   - 🧩 *Pipeline 1 — Direct Classification*
-   - ⚙️ *Pipeline 2 — Denoise → Classify*
+   -  *Pipeline 1 — Direct Classification*
+   -  *Pipeline 2 — Denoise → Classify*
 4. The app will:
    - Load your image and preprocess it (normalize, resize to 128×128)
    - Run through the selected pipeline
