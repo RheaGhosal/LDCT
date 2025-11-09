@@ -1,0 +1,2 @@
+ pip install torch torchvision numpy pandas scikit-learn opencv-python matplotlib tqdm bm3d
+  
