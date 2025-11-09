@@ -210,4 +210,34 @@ Example Demo Flow
 *↑ Higher PSNR and SSIM indicate better denoising performance.*
 
 
+## Optional: Classical Baseline (BM3D + Logistic Regression)
+
+This repo also includes a lightweight **classical baseline** used in the paper’s
+“Classical Baselines” section: BM3D denoising followed by logistic regression
+on simple intensity features. It is **separate from the Streamlit demo** and
+lives under `baselines/bm3d_lr/`.
+
+**Why separate?**  
+The baseline is a quick reproducibility check for the paper (not part of the
+interactive demo). Keeping it outside `demo/` avoids extra dependencies and
+keeps the app snappy.
+
+**How to run (from repo root):**
+```bash
+# 1) Create a λ=10 dataset from nested image.npz/mask.npz pairs
+python baselines/bm3d_lr/build_lambda_npz.py \
+  --root ./dataset \
+  --out LDCT_Project/data/dataset/lambda10.npz \
+  --lambda_val 10 \
+  --resize 128
+
+# 2) Run the BM3D + Logistic Regression baseline
+python baselines/bm3d_lr/bm3d_logistic_baseline.py
+
+# 3) Example Results -
+Accuracy: 0.772
+Sensitivity:0.000
+Specificity:1.000
+AUC: 0.635
+
   
